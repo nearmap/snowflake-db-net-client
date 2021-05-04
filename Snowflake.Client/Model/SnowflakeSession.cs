@@ -27,6 +27,10 @@ namespace Snowflake.Client
         public string WarehouseName { get; private set; }
         public string RoleName { get; private set; }
 
+        /// <summary>
+        /// Construct a <see cref="SnowflakeSession"/> after a successful login request.
+        /// </summary>
+        /// <param name="loginResponseData">Data from login response.</param>
         public SnowflakeSession(LoginResponseData loginResponseData)
         {
             this.SessionToken = loginResponseData.Token;
@@ -50,7 +54,12 @@ namespace Snowflake.Client
             this.RoleName = loginResponseData.SessionInfo.RoleName;
         }
 
-        internal void Renew(RenewSessionResponseData renewSessionResponseData)
+        /// <summary>
+        /// Construct a <see cref="SnowflakeSession"/> after a successful renew session request.
+        /// </summary>
+        /// <param name="session">The old session.</param>
+        /// <param name="renewSessionResponseData">Data from renew session response.</param>
+        public SnowflakeSession(SnowflakeSession session, RenewSessionResponseData renewSessionResponseData)
         {
             this.SessionToken = renewSessionResponseData.SessionToken;
 
@@ -58,6 +67,20 @@ namespace Snowflake.Client
             this.SessionId = renewSessionResponseData.SessionId;
             this.ValidityInSeconds = renewSessionResponseData.ValidityInSecondsST;
             this.MasterValidityInSeconds = renewSessionResponseData.ValidityInSecondsMT;
+
+            this.DisplayUserName = session.DisplayUserName;
+            this.ServerVersion = session.ServerVersion;
+            this.FirstLogin = session.FirstLogin;
+            this.RemMeToken = session.RemMeToken;
+            this.RemMeValidityInSeconds = session.RemMeValidityInSeconds;
+            this.HealthCheckInterval = session.HealthCheckInterval;
+            this.NewClientForUpgrade = session.NewClientForUpgrade;
+            this.IdToken = session.IdToken;
+            this.IdTokenValidityInSeconds = session.IdTokenValidityInSeconds;
+            this.DatabaseName = session.DatabaseName;
+            this.SchemaName = session.SchemaName;
+            this.WarehouseName = session.WarehouseName;
+            this.RoleName = session.RoleName;
         }
 
         public override string ToString()

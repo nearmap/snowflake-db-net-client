@@ -23,7 +23,7 @@ namespace Snowflake.Client
         private readonly SnowflakeClientSettings _clientSettings;
 
         /// <summary>
-        /// Creates new Snowflake client. 
+        /// Creates new Snowflake client.
         /// </summary>
         /// <param name="user">Username</param>
         /// <param name="password">Password</param>
@@ -34,8 +34,8 @@ namespace Snowflake.Client
         {
         }
 
-        /// <summary> 
-        /// Creates new Snowflake client. 
+        /// <summary>
+        /// Creates new Snowflake client.
         /// </summary>
         /// <param name="authInfo">Auth information: user, password, account, region</param>
         /// <param name="sessionInfo">Session information: role, schema, database, warehouse</param>
@@ -47,7 +47,7 @@ namespace Snowflake.Client
         }
 
         /// <summary>
-        /// Creates new Snowflake client. 
+        /// Creates new Snowflake client.
         /// </summary>
         /// <param name="settings">Client settings to initialize new session.</param>
         public SnowflakeClient(SnowflakeClientSettings settings)
@@ -212,14 +212,16 @@ namespace Snowflake.Client
                 await InitNewSessionAsync().ConfigureAwait(false);
             }
 
-            var queryRequest = _requestBuilder.BuildQueryRequest(sql, sqlParams, describeOnly);
-            var response = await _restClient.SendAsync<QueryExecResponse>(queryRequest).ConfigureAwait(false);
+            // each HttpRequestMessage can only be sent once (!)
+            Func<HttpRequestMessage> buildRequest = () => _requestBuilder.BuildQueryRequest(sql, sqlParams, describeOnly);
+
+            var response = await _restClient.SendAsync<QueryExecResponse>(buildRequest()).ConfigureAwait(false);
 
             // Auto renew session, if it's expired
             if (response.Code == 390112)
             {
                 await RenewSessionAsync().ConfigureAwait(false);
-                response = await _restClient.SendAsync<QueryExecResponse>(queryRequest).ConfigureAwait(false);
+                response = await _restClient.SendAsync<QueryExecResponse>(buildRequest()).ConfigureAwait(false);
             }
 
             if (!response.Success)
@@ -229,7 +231,7 @@ namespace Snowflake.Client
         }
 
         /// <summary>
-        /// Closes current Snowflake session. 
+        /// Closes current Snowflake session.
         /// </summary>
         /// <returns>True if session was successfully closed.</returns>
         public async Task<bool> CloseSessionAsync()

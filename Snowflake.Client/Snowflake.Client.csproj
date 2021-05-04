@@ -3,16 +3,17 @@
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.1;netstandard2.0;</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>0.3.5</Version>
-    <Authors>fixer_m</Authors>
-    <Description>Unofficial .NET client for Snowflake REST API. 
+    <Version>0.3.7</Version>
+    <Authors>fixer_m, richard.barnett</Authors>
+    <Description>Unofficial .NET client for Snowflake REST API.
 Provides straightforward and efficient way to execute SQL queries in Snowflake and automatically map response to your models.
     </Description>
     <Copyright>Copyright (c) 2020-2021 Ilya Bystrov</Copyright>
-    <PackageProjectUrl>https://github.com/fixer-m/snowflake-db-net-client/</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/nearmap/snowflake-db-net-client/</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/fixer-m/snowflake-db-net-client/</RepositoryUrl>
+    <RepositoryUrl>https://github.com/nearmap/snowflake-db-net-client/</RepositoryUrl>
     <PackageTags>snowflake;client;api;wrapper;snowflakedb;rest;restapi</PackageTags>
+    <PackageId>Nearmap.Snowflake.Client</PackageId>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">

@@ -16,9 +16,6 @@ namespace Snowflake.Client
         private readonly JsonSerializerOptions _jsonSerializerOptions;
         private readonly ClientAppInfo _clientInfo;
 
-        private string _masterToken;
-        private string _sessionToken;
-
         public RequestBuilder(UrlInfo urlInfo)
         {
             this._urlInfo = urlInfo;
@@ -29,18 +26,6 @@ namespace Snowflake.Client
             };
 
             this._clientInfo = new ClientAppInfo();
-        }
-
-        public void SetSessionTokens(string sessionToken, string masterToken)
-        {
-            this._sessionToken = sessionToken;
-            this._masterToken = masterToken;
-        }
-
-        public void ClearSessionTokens()
-        {
-            this._sessionToken = null;
-            this._masterToken = null;
         }
 
         public HttpRequestMessage BuildLoginRequest(AuthInfo authInfo, SessionInfo sessionInfo)
@@ -64,7 +49,7 @@ namespace Snowflake.Client
             return request;
         }
 
-        public HttpRequestMessage BuildCancelQueryRequest(string requestId)
+        public HttpRequestMessage BuildCancelQueryRequest(SnowflakeSession session, string requestId)
         {
             var requestUri = BuildCancelQueryUrl();
             var requestBody = new CancelQueryRequest()
@@ -73,27 +58,27 @@ namespace Snowflake.Client
             };
 
             var jsonBody = JsonSerializer.Serialize(requestBody, _jsonSerializerOptions);
-            var request = BuildJsonRequestMessage(requestUri, HttpMethod.Post, jsonBody);
+            var request = BuildJsonRequestMessage(requestUri, HttpMethod.Post, jsonBody, session);
 
             return request;
         }
 
-        public HttpRequestMessage BuildRenewSessionRequest()
+        public HttpRequestMessage BuildRenewSessionRequest(SnowflakeSession session)
         {
             var requestUri = BuildRenewSessionUrl();
             var requestBody = new RenewSessionRequest()
             {
-                OldSessionToken = _sessionToken,
+                OldSessionToken = session.SessionToken,
                 RequestType = "RENEW"
             };
 
             var jsonBody = JsonSerializer.Serialize(requestBody, _jsonSerializerOptions);
-            var request = BuildJsonRequestMessage(requestUri, HttpMethod.Post, jsonBody, true);
+            var request = BuildJsonRequestMessage(requestUri, HttpMethod.Post, jsonBody, session, true);
 
             return request;
         }
 
-        public HttpRequestMessage BuildQueryRequest(string sql, object sqlParams, bool describeOnly)
+        public HttpRequestMessage BuildQueryRequest(SnowflakeSession session, string sql, object sqlParams, bool describeOnly)
         {
             var queryUri = BuildQueryUrl();
 
@@ -105,19 +90,19 @@ namespace Snowflake.Client
             };
 
             var jsonBody = JsonSerializer.Serialize(requestBody, _jsonSerializerOptions);
-            var request = BuildJsonRequestMessage(queryUri, HttpMethod.Post, jsonBody);
+            var request = BuildJsonRequestMessage(queryUri, HttpMethod.Post, jsonBody, session);
 
             return request;
         }
 
-        public HttpRequestMessage BuildCloseSessionRequest()
+        public HttpRequestMessage BuildCloseSessionRequest(SnowflakeSession session)
         {
             var queryParams = new Dictionary<string, string>();
             queryParams[SnowflakeConst.SF_QUERY_SESSION_DELETE] = "true";
             queryParams[SnowflakeConst.SF_QUERY_REQUEST_ID] = Guid.NewGuid().ToString();
 
             var requestUri = BuildUri(SnowflakeConst.SF_SESSION_PATH, queryParams);
-            var request = BuildJsonRequestMessage(requestUri, HttpMethod.Post);
+            var request = BuildJsonRequestMessage(requestUri, HttpMethod.Post, jsonBody: null, session);
 
             return request;
         }
@@ -186,7 +171,7 @@ namespace Snowflake.Client
             return uriBuilder.Uri;
         }
 
-        private HttpRequestMessage BuildJsonRequestMessage(Uri uri, HttpMethod method, string jsonBody = null, bool useMasterToken = false)
+        private HttpRequestMessage BuildJsonRequestMessage(Uri uri, HttpMethod method, string jsonBody = null, SnowflakeSession session = null, bool useMasterToken = false)
         {
             var request = new HttpRequestMessage();
             request.Method = method;
@@ -197,9 +182,9 @@ namespace Snowflake.Client
                 request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
             }
 
-            if (_sessionToken != null)
+            if (session != null)
             {
-                var authToken = useMasterToken ? _masterToken : _sessionToken;
+                var authToken = useMasterToken ? session.MasterToken : session.SessionToken;
                 request.Headers.Add("Authorization", $"Snowflake Token=\"{authToken}\"");
             }
 

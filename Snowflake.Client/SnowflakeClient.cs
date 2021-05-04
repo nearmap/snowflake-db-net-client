@@ -23,7 +23,7 @@ namespace Snowflake.Client
         private readonly SnowflakeClientSettings _clientSettings;
 
         /// <summary>
-        /// Creates new Snowflake client.
+        /// Creates new Snowflake client. 
         /// </summary>
         /// <param name="user">Username</param>
         /// <param name="password">Password</param>
@@ -34,8 +34,8 @@ namespace Snowflake.Client
         {
         }
 
-        /// <summary>
-        /// Creates new Snowflake client.
+        /// <summary> 
+        /// Creates new Snowflake client. 
         /// </summary>
         /// <param name="authInfo">Auth information: user, password, account, region</param>
         /// <param name="sessionInfo">Session information: role, schema, database, warehouse</param>
@@ -47,7 +47,7 @@ namespace Snowflake.Client
         }
 
         /// <summary>
-        /// Creates new Snowflake client.
+        /// Creates new Snowflake client. 
         /// </summary>
         /// <param name="settings">Client settings to initialize new session.</param>
         public SnowflakeClient(SnowflakeClientSettings settings)
@@ -91,7 +91,6 @@ namespace Snowflake.Client
         public async Task<bool> InitNewSessionAsync()
         {
             _session = await AuthenticateAsync(_clientSettings.AuthInfo, _clientSettings.SessionInfo).ConfigureAwait(false);
-            _requestBuilder.SetSessionTokens(_session.SessionToken, _session.MasterToken);
 
             return true;
         }
@@ -117,14 +116,13 @@ namespace Snowflake.Client
             if (_session == null)
                 throw new SnowflakeException("Session is not itialized yet.");
 
-            var renewSessionRequest = _requestBuilder.BuildRenewSessionRequest();
+            var renewSessionRequest = _requestBuilder.BuildRenewSessionRequest(_session);
             var response = await _restClient.SendAsync<RenewSessionResponse>(renewSessionRequest).ConfigureAwait(false);
 
             if (!response.Success)
                 throw new SnowflakeException($"Renew session failed. Message: {response.Message}", response.Code);
 
-            _session.Renew(response.Data);
-            _requestBuilder.SetSessionTokens(_session.SessionToken, _session.MasterToken);
+            _session = new SnowflakeSession(_session, response.Data);
 
             return true;
         }
@@ -195,7 +193,7 @@ namespace Snowflake.Client
         /// <param name="requestId">Request ID to cancel.</param>
         public async Task<bool> CancelQueryAsync(string requestId)
         {
-            var cancelQueryRequest = _requestBuilder.BuildCancelQueryRequest(requestId);
+            var cancelQueryRequest = _requestBuilder.BuildCancelQueryRequest(_session, requestId);
 
             var response = await _restClient.SendAsync<NullDataResponse>(cancelQueryRequest).ConfigureAwait(false);
 
@@ -213,7 +211,7 @@ namespace Snowflake.Client
             }
 
             // each HttpRequestMessage can only be sent once (!)
-            Func<HttpRequestMessage> buildRequest = () => _requestBuilder.BuildQueryRequest(sql, sqlParams, describeOnly);
+            Func<HttpRequestMessage> buildRequest = () => _requestBuilder.BuildQueryRequest(_session, sql, sqlParams, describeOnly);
 
             var response = await _restClient.SendAsync<QueryExecResponse>(buildRequest()).ConfigureAwait(false);
 
@@ -231,16 +229,15 @@ namespace Snowflake.Client
         }
 
         /// <summary>
-        /// Closes current Snowflake session.
+        /// Closes current Snowflake session. 
         /// </summary>
         /// <returns>True if session was successfully closed.</returns>
         public async Task<bool> CloseSessionAsync()
         {
-            var closeSessionRequest = _requestBuilder.BuildCloseSessionRequest();
+            var closeSessionRequest = _requestBuilder.BuildCloseSessionRequest(_session);
             var response = await _restClient.SendAsync<CloseResponse>(closeSessionRequest).ConfigureAwait(false);
 
             _session = null;
-            _requestBuilder.ClearSessionTokens();
 
             if (!response.Success)
                 throw new SnowflakeException($"Closing session failed. Message: {response.Message}", response.Code);
